@@ -1,7 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"rabbit-worker/rabbitmq"
+)
 
 func main() {
-	fmt.Println("under development")
+	rabbitmq.Worker()
 }
