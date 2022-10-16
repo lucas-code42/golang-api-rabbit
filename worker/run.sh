@@ -1,1 +1,0 @@
-USER="dev" PASS="dev" DB="developer" go run main.go
