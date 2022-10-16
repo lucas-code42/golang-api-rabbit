@@ -1,32 +1,31 @@
 package controller
 
 import (
-	"api-rabbit-sender/api_util"
+	apiutil "api-rabbit-sender/api_util"
 	"api-rabbit-sender/model"
+	rabbitMQ "api-rabbit-sender/rabbitMQ"
 	"encoding/json"
 	"io"
 	"log"
 	"net/http"
 )
 
-func prepareBody(w http.ResponseWriter, r *http.Request) {
+// PrepareBody recebe a requisão e valida se esta de acordo com o model para entao ser postada msg na fila
+func PrepareBody(w http.ResponseWriter, r *http.Request) {
 	var person model.Person
 
 	body, err := io.ReadAll(r.Body)
 	apiutil.FailOnError(err, "Erro ao converter body da requisição")
 
-	if ConvertBodyToStruct(body, &person) != nil {
+	if apiutil.ConvertBodyToStruct(body, &person) != nil {
 		w.Write([]byte("Dados incorretos"))
 	} else {
-
+		queueData, err := json.Marshal(person)
+		if err != nil {
+			log.Print("Erro ao fazer Marshal", err)
+			return
+		}
+		rabbitMQ.EventSender(queueData)
 	}
 
-}
-
-func ConvertBodyToStruct(body []byte, person *model.Person) error {
-	if err := json.Unmarshal(body, &person); err != nil {
-		log.Printf("Erro ao converter body para models")
-		return err
-	}
-	return nil
 }

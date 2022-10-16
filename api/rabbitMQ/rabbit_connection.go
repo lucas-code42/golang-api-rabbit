@@ -9,25 +9,25 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-func rabbitConnection() *amqp.Connection {
+// EventSender estabelece uma conexao com rabbit e envia o pacote para fila setada na funcao.
+func EventSender(body []byte) bool {
 	conn, err := amqp.Dial("amqp://admin:admin@localhost:5672/")
 	apiutil.FailOnError(err, "Erro de conexao com rabbitmq")
-	return conn
-}
+	defer conn.Close()
 
-func EventSender(rabbitConnection *amqp.Connection, body []byte) bool {
-	channel, err := rabbitConnection.Channel()
+	channel, err := conn.Channel()
 	apiutil.FailOnError(err, "Erro ao gerar channel")
-	defer rabbitConnection.Close()
 	defer channel.Close()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
+	var queue string = "golang_queue"
+
 	err = channel.PublishWithContext(
 		ctx,
 		"",
-		"golang_queue",
+		queue,
 		false,
 		false,
 		amqp.Publishing{
@@ -36,7 +36,10 @@ func EventSender(rabbitConnection *amqp.Connection, body []byte) bool {
 		},
 	)
 	log.Printf("[*] sent %s", body)
-	apiutil.FailOnError(err, "Falha ao enviar msg para fila")
 
-	return true
+	if err != nil {
+		return false
+	} else {
+		return true
+	}
 }
